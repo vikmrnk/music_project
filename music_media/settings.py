@@ -30,8 +30,10 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'cloudinary_storage',  # Має бути перед 'django.contrib.staticfiles'
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
+    'cloudinary',  # Cloudinary для зберігання медіа
     'articles',
     'crispy_forms',
     'crispy_bootstrap5',
@@ -156,8 +158,17 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Переконайтеся, що staticfiles існує
 os.makedirs(STATIC_ROOT, exist_ok=True)
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Cloudinary налаштування для медіа-файлів
+CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')
+if CLOUDINARY_URL:
+    # Використовуємо Cloudinary для зберігання медіа
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    MEDIA_URL = '/media/'
+    # MEDIA_ROOT не потрібен при використанні Cloudinary
+else:
+    # Локальне зберігання для розробки
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

@@ -31,6 +31,7 @@ def home(request):
         'popular_articles': popular_articles,
         'interviews': interviews,
         'reviews': reviews,
+        'categories': get_categories_for_context(),  # Додаємо категорії для навігації
     }
     return render(request, 'articles/home.html', context)
 
