@@ -4,6 +4,21 @@ from django.utils.text import slugify
 from django.urls import reverse
 from django.utils import timezone
 import math
+import os
+
+# Імпортуємо CloudinaryField, якщо Cloudinary налаштовано
+try:
+    from cloudinary.models import CloudinaryField
+    CLOUDINARY_AVAILABLE = True
+except ImportError:
+    CLOUDINARY_AVAILABLE = False
+    # Створюємо заглушку для CloudinaryField
+    class CloudinaryField:
+        pass
+
+# Визначаємо, чи використовувати Cloudinary
+# На Render CLOUDINARY_URL буде встановлено, тому використовуємо CloudinaryField
+USE_CLOUDINARY = CLOUDINARY_AVAILABLE and bool(os.environ.get('CLOUDINARY_URL', ''))
 
 try:
     from unidecode import unidecode
@@ -79,7 +94,13 @@ class AuthorProfile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author_profile', verbose_name="Користувач")
     bio = models.TextField(blank=True, verbose_name="Біографія")
-    avatar = models.ImageField(upload_to='authors/', blank=True, null=True, verbose_name="Аватар")
+    # Використовуємо CloudinaryField для зберігання на Cloudinary
+    # На Render з CLOUDINARY_URL використовується CloudinaryField
+    # Локально використовується ImageField
+    if USE_CLOUDINARY and CLOUDINARY_AVAILABLE and CloudinaryField and not isinstance(CloudinaryField, type):
+        avatar = CloudinaryField('image', folder='authors/', blank=True, null=True, verbose_name="Аватар")
+    else:
+        avatar = models.ImageField(upload_to='authors/', blank=True, null=True, verbose_name="Аватар")
     social_links = models.JSONField(default=dict, blank=True, verbose_name="Соціальні мережі")
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='author', verbose_name="Роль")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -114,8 +135,15 @@ class Article(models.Model):
     tags = models.ManyToManyField(Tag, blank=True, related_name='articles', verbose_name="Теги")
     
     # Медіа
-    featured_image = models.ImageField(upload_to='articles/', blank=True, null=True, verbose_name="Головне зображення")
-    featured_video = models.FileField(upload_to='articles/videos/', blank=True, null=True, verbose_name="Відео (файл)")
+    # Використовуємо CloudinaryField для зберігання на Cloudinary
+    # На Render з CLOUDINARY_URL використовується CloudinaryField
+    # Локально використовується ImageField/FileField
+    if USE_CLOUDINARY and CLOUDINARY_AVAILABLE and CloudinaryField and not isinstance(CloudinaryField, type):
+        featured_image = CloudinaryField('image', folder='articles/', blank=True, null=True, verbose_name="Головне зображення")
+        featured_video = CloudinaryField('video', folder='articles/videos/', blank=True, null=True, resource_type='video', verbose_name="Відео (файл)")
+    else:
+        featured_image = models.ImageField(upload_to='articles/', blank=True, null=True, verbose_name="Головне зображення")
+        featured_video = models.FileField(upload_to='articles/videos/', blank=True, null=True, verbose_name="Відео (файл)")
     video_url = models.URLField(blank=True, max_length=500, verbose_name="Відео URL (YouTube/Vimeo)")
     
     # Метадані

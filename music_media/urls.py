@@ -1,6 +1,7 @@
 """
 URL configuration for music_media project.
 """
+import os
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -27,8 +28,19 @@ urlpatterns = [
 # Додаємо fallback для надійності
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Обслуговування медіа-файлів
+# Якщо використовується Cloudinary, медіа-файли обслуговуються через Cloudinary
+# Якщо ні - обслуговуємо локально (для розробки та production без Cloudinary)
+cloudinary_url = os.environ.get('CLOUDINARY_URL', '')
+# Завжди обслуговуємо медіа-файли локально, якщо Cloudinary не використовується
+if not cloudinary_url:
+    if hasattr(settings, 'MEDIA_ROOT') and settings.MEDIA_ROOT:
+        # Використовуємо serve для обслуговування медіа-файлів в production
+        from django.views.static import serve
+        from django.urls import re_path
+        urlpatterns += [
+            re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+        ]
 
 # Обробка помилок
 handler404 = 'articles.views.handler404'
