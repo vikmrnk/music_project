@@ -13,7 +13,12 @@ class CategoryAdmin(admin.ModelAdmin):
     ordering = ['order', 'name']
 
     def article_count(self, obj):
-        return obj.articles.filter(status='published').count()
+        try:
+            if obj.pk:
+                return obj.articles.filter(status='published').count()
+            return 0
+        except Exception:
+            return 0
     article_count.short_description = 'Статей'
 
 
@@ -24,7 +29,12 @@ class TagAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
 
     def article_count(self, obj):
-        return obj.articles.filter(status='published').count()
+        try:
+            if obj.pk:
+                return obj.articles.filter(status='published').count()
+            return 0
+        except Exception:
+            return 0
     article_count.short_description = 'Статей'
 
 
@@ -44,7 +54,12 @@ class AuthorProfileAdmin(admin.ModelAdmin):
     )
 
     def article_count(self, obj):
-        return obj.user.articles.filter(status='published').count()
+        try:
+            if obj.user and obj.user.pk:
+                return obj.user.articles.filter(status='published').count()
+            return 0
+        except Exception:
+            return 0
     article_count.short_description = 'Статей'
 
 
@@ -84,9 +99,12 @@ class ArticleAdmin(admin.ModelAdmin):
     )
 
     def preview_image(self, obj):
-        if obj.featured_image:
-            return format_html('<img src="{}" width="100" height="60" style="object-fit: cover;" />', obj.featured_image.url)
-        return '-'
+        try:
+            if obj.featured_image and obj.featured_image.url:
+                return format_html('<img src="{}" width="100" height="60" style="object-fit: cover;" />', obj.featured_image.url)
+            return '-'
+        except Exception:
+            return '-'
     preview_image.short_description = 'Зображення'
 
     def save_model(self, request, obj, form, change):

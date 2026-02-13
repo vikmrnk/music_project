@@ -8,6 +8,9 @@ from django.db import OperationalError, DatabaseError
 def categories(request):
     """Додати всі активні категорії до контексту"""
     # Не додаємо категорії для адмінки, щоб уникнути помилок
+    if not request or not hasattr(request, 'path'):
+        return {'categories': []}
+    
     if request.path.startswith('/admin/'):
         return {'categories': []}
     
