@@ -153,6 +153,21 @@ CACHES = {
 
 # Session settings
 SESSION_COOKIE_AGE = 86400  # 1 day
+SESSION_COOKIE_SECURE = True  # Для HTTPS на Render
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# CSRF settings для Render
+# Отримуємо домен з environment або використовуємо за замовчуванням
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME', 'music-project-dqkr.onrender.com')
+CSRF_TRUSTED_ORIGINS = [
+    f'https://{RENDER_EXTERNAL_HOSTNAME}',
+    'https://music-project-dqkr.onrender.com',  # Явно вказаний домен
+]
+CSRF_COOKIE_SECURE = True  # Для HTTPS на Render
+CSRF_COOKIE_HTTPONLY = False  # Адмінка потребує доступу до CSRF токена через JS
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_USE_SESSIONS = False  # Використовуємо cookies для CSRF
 
 # WhiteNoise settings for static files
 # Використовуємо стандартний storage (WhiteNoise обслуговує файли через middleware)
