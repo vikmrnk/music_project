@@ -119,7 +119,6 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Переконайтеся, що staticfiles існує
-import os
 os.makedirs(STATIC_ROOT, exist_ok=True)
 
 MEDIA_URL = '/media/'
@@ -150,12 +149,12 @@ CACHES = {
 SESSION_COOKIE_AGE = 86400  # 1 day
 
 # WhiteNoise settings for static files
-# Використовуємо CompressedStaticFilesStorage для стиснення та кешування
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+# Використовуємо стандартний storage (WhiteNoise обслуговує файли через middleware)
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # WhiteNoise configuration
 WHITENOISE_USE_FINDERS = True  # Дозволяє WhiteNoise знаходити файли в STATICFILES_DIRS
 WHITENOISE_AUTOREFRESH = False  # В production не потрібно
+WHITENOISE_INDEX_FILE = False  # Не використовуємо index файли
 WHITENOISE_ROOT = STATIC_ROOT  # Вказуємо корінь для статичних файлів
-WHITENOISE_MANIFEST_STRICT = False  # Не вимагає всіх файлів в manifest
 

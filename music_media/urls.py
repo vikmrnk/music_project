@@ -22,9 +22,13 @@ urlpatterns = [
     path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
 ]
 
+# Обслуговування статичних файлів
+# WhiteNoise обслуговує статичні файли в production через middleware
+# Додаємо fallback для надійності
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 # Обробка помилок
 handler404 = 'articles.views.handler404'
