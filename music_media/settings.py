@@ -146,5 +146,7 @@ CACHES = {
 SESSION_COOKIE_AGE = 86400  # 1 day
 
 # WhiteNoise settings for static files
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Використовуємо CompressedStaticFilesStorage замість CompressedManifestStaticFilesStorage
+# щоб уникнути помилок з відсутніми файлами в manifest (наприклад, favicon.ico)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
