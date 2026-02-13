@@ -13,18 +13,22 @@ from django.template.context import RequestContext, BaseContext
 def _fixed_requestcontext_copy(self):
     """
     Виправлена версія __copy__ для RequestContext, яка працює з Python 3.14.
+    Використовуємо простий підхід - створюємо порожній екземпляр і копіюємо атрибути.
     """
-    # Створюємо новий екземпляр RequestContext з тими ж параметрами
-    # Використовуємо перший dict як базовий контекст
-    base_dict = self.dicts[0] if self.dicts else {}
-    duplicate = self.__class__(
-        self.request,
-        base_dict,
-        current_app=self.current_app
-    )
-    # Копіюємо всі dicts (включаючи ті, що додані через context processors)
-    # Це важливо, бо context processors додають додаткові dicts
+    # Створюємо новий порожній екземпляр без виклику __init__
+    # Це уникає повторного виклику context processors
+    duplicate = object.__new__(self.__class__)
+    
+    # Копіюємо dicts напряму (це найважливіший атрибут)
     duplicate.dicts = self.dicts[:]
+    
+    # Копіюємо request (обов'язковий атрибут для RequestContext)
+    duplicate.request = self.request
+    
+    # Копіюємо current_app, якщо він існує (опціональний атрибут)
+    if hasattr(self, 'current_app'):
+        duplicate.current_app = self.current_app
+    
     return duplicate
 
 
