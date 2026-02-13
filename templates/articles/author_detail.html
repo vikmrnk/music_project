@@ -29,15 +29,17 @@
         
         {% if page_obj.has_other_pages %}
         <div class="pagination">
-            {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}" class="pagination-link">← Попередня</a>
-            {% endif %}
-            
             <span class="pagination-info">Сторінка {{ page_obj.number }} з {{ page_obj.paginator.num_pages }}</span>
             
-            {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="pagination-link">Наступна →</a>
-            {% endif %}
+            <div class="pagination-buttons">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}" class="pagination-link">← Попередня</a>
+                {% endif %}
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="pagination-link">Наступна →</a>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
     </div>

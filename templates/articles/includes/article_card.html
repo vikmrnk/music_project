@@ -9,8 +9,15 @@
     
     <div class="article-content">
         {% if article.category %}
-        {% with category_slug=article.category.slug %}
-        <span class="category-badge {% if category_slug == 'news' or category_slug == 'novyny' %}category-badge--news{% elif category_slug == 'interviews' or category_slug == 'interviu' %}category-badge--interview{% elif category_slug == 'reviews' or category_slug == 'retsenzii' %}category-badge--review{% elif category_slug == 'analytics' or category_slug == 'analityka' %}category-badge--analytics{% elif category_slug == 'playlists' or category_slug == 'dobirky' %}category-badge--compilations{% elif category_slug == 'columns' or category_slug == 'avtorski-kolonky' %}category-badge--columns{% endif %}">{{ article.category.name }}</span>
+        {% with category_slug=article.category.slug|lower category_name=article.category.name|lower %}
+        <span class="category-badge 
+            {% if 'новин' in category_name or category_slug == 'news' or category_slug == 'novyny' %}category-badge--news
+            {% elif 'інтерв' in category_name or category_slug == 'interviews' or category_slug == 'interviu' %}category-badge--interview
+            {% elif 'реценз' in category_name or category_slug == 'reviews' or category_slug == 'retsenzii' %}category-badge--review
+            {% elif 'аналіт' in category_name or category_slug == 'analytics' or category_slug == 'analityka' %}category-badge--analytics
+            {% elif 'добір' in category_name or category_slug == 'playlists' or category_slug == 'dobirky' %}category-badge--compilations
+            {% elif 'колон' in category_name or category_slug == 'columns' or category_slug == 'avtorski-kolonky' %}category-badge--columns
+            {% endif %}">{{ article.category.name }}</span>
         {% endwith %}
         {% endif %}
         

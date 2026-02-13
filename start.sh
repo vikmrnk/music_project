@@ -11,6 +11,17 @@ if [ ! -d "staticfiles" ] || [ -z "$(ls -A staticfiles 2>/dev/null)" ]; then
     python manage.py collectstatic --noinput || true
 fi
 
+# Create superuser if doesn't exist
+python manage.py shell << EOF
+from django.contrib.auth import get_user_model
+User = get_user_model()
+if not User.objects.filter(username='адмін').exists():
+    User.objects.create_superuser('адмін', '', 'адмін123')
+    print('✓ Суперкористувач створено: адмін / адмін123')
+else:
+    print('✓ Суперкористувач вже існує')
+EOF
+
 # Initialize data (import articles if database is empty)
 python manage.py init_data || true  # || true щоб не зупинити сервер при помилці
 
