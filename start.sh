@@ -5,6 +5,12 @@ set -o errexit
 # Run migrations
 python manage.py migrate --noinput
 
+# Collect static files (fallback, якщо не виконано в build.sh)
+if [ ! -d "staticfiles" ] || [ -z "$(ls -A staticfiles 2>/dev/null)" ]; then
+    echo "Збір статичних файлів (fallback)..."
+    python manage.py collectstatic --noinput || true
+fi
+
 # Initialize data (import articles if database is empty)
 python manage.py init_data || true  # || true щоб не зупинити сервер при помилці
 
