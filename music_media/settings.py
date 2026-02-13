@@ -17,7 +17,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production-!@#$%^&*()')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False") == "True"
+# Тимчасово увімкнено для діагностики помилок адмінки
+DEBUG = os.environ.get("DEBUG", "True") == "True"  # Тимчасово True для діагностики
 
 ALLOWED_HOSTS = ["*"]  # Тимчасово для Render, потім можна поставити домен
 
@@ -66,6 +67,33 @@ TEMPLATES = [
         },
     },
 ]
+
+# Логування для діагностики
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'articles': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
 
 WSGI_APPLICATION = 'music_media.wsgi.application'
 

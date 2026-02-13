@@ -155,14 +155,29 @@ def handler404(request, exception):
 
 def handler500(request):
     """Кастомна сторінка 500 - простий HTML без залежностей"""
+    import traceback
+    import sys
+    from django.http import HttpResponseServerError
+    
+    # Логуємо помилку
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    if exc_type:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f'500 Error: {exc_type.__name__}: {exc_value}')
+        logger.error(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+    
+    # Для адмінки повертаємо стандартну Django помилку
+    if request and hasattr(request, 'path') and request.path.startswith('/admin/'):
+        # Повертаємо простий HTML без залежностей
+        html = """<!DOCTYPE html><html><head><meta charset="utf-8"><title>500 - Помилка сервера</title><style>body{font-family:Arial;text-align:center;padding:50px;background:#f5f5f5;}h1{color:#6366f1;font-size:72px;margin:0;}p{color:#666;font-size:18px;margin:20px 0;}a{display:inline-block;padding:12px 24px;background:#6366f1;color:white;text-decoration:none;border-radius:8px;margin-top:20px;}</style></head><body><h1>500</h1><p>Помилка сервера</p><a href="/admin/">Повернутися до адмінки</a></body></html>"""
+        return HttpResponseServerError(html, content_type='text/html; charset=utf-8')
+    
+    # Для інших сторінок використовуємо шаблон
     try:
         from django.template import loader
-        from django.http import HttpResponseServerError
-        # Використовуємо простий шаблон без extends та context_processors
         template = loader.get_template('articles/500.html')
         return HttpResponseServerError(template.render({}, request))
     except Exception:
-        # Якщо навіть рендеринг помилки не працює, повертаємо простий HTML
-        from django.http import HttpResponseServerError
         html = """<!DOCTYPE html><html><head><meta charset="utf-8"><title>500</title></head><body><h1>500</h1><p>Помилка сервера</p><a href="/">На головну</a></body></html>"""
         return HttpResponseServerError(html, content_type='text/html; charset=utf-8')

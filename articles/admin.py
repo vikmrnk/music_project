@@ -14,12 +14,13 @@ class CategoryAdmin(admin.ModelAdmin):
 
     def article_count(self, obj):
         try:
-            if obj.pk:
+            if obj and obj.pk:
                 return obj.articles.filter(status='published').count()
             return 0
-        except Exception:
+        except (AttributeError, Exception) as e:
             return 0
     article_count.short_description = 'Статей'
+    article_count.admin_order_field = None  # Вимкнути сортування
 
 
 @admin.register(Tag)
@@ -30,12 +31,13 @@ class TagAdmin(admin.ModelAdmin):
 
     def article_count(self, obj):
         try:
-            if obj.pk:
+            if obj and obj.pk:
                 return obj.articles.filter(status='published').count()
             return 0
-        except Exception:
+        except (AttributeError, Exception) as e:
             return 0
     article_count.short_description = 'Статей'
+    article_count.admin_order_field = None  # Вимкнути сортування
 
 
 @admin.register(AuthorProfile)
@@ -55,12 +57,13 @@ class AuthorProfileAdmin(admin.ModelAdmin):
 
     def article_count(self, obj):
         try:
-            if obj.user and obj.user.pk:
+            if obj and obj.user and hasattr(obj.user, 'pk') and obj.user.pk:
                 return obj.user.articles.filter(status='published').count()
             return 0
-        except Exception:
+        except (AttributeError, Exception) as e:
             return 0
     article_count.short_description = 'Статей'
+    article_count.admin_order_field = None  # Вимкнути сортування
 
 
 @admin.register(Article)
