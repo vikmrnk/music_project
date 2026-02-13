@@ -15,6 +15,7 @@ def categories(request):
         return {'categories': []}
     
     try:
+        # Отримуємо категорії як QuerySet, але не копіюємо контекст для адмінки
         return {
             'categories': Category.objects.filter(is_active=True).order_by('order', 'name')
         }
