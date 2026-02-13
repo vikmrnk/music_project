@@ -108,9 +108,20 @@ class ArticleAdmin(admin.ModelAdmin):
     preview_image.short_description = 'Зображення'
 
     def save_model(self, request, obj, form, change):
-        if not change:  # Нова стаття
-            obj.author = request.user
-        super().save_model(request, obj, form, change)
+        try:
+            if not change and not obj.author:  # Нова стаття без автора
+                obj.author = request.user
+            super().save_model(request, obj, form, change)
+        except Exception as e:
+            # Логуємо помилку, але не зупиняємо процес
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Помилка збереження статті: {e}')
+            # Пробуємо зберегти без автоматичного призначення автора
+            if not change and not obj.author:
+                # Якщо не вдалося встановити автора, залишаємо як є
+                pass
+            super().save_model(request, obj, form, change)
 
 
 @admin.register(NewsletterSubscriber)
