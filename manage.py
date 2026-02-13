@@ -3,6 +3,13 @@
 import os
 import sys
 
+# Виправлення для Python 3.14 сумісності з Django
+# Має бути імпортовано ПЕРЕД будь-якими імпортами Django
+try:
+    from music_media.python314_fix import *  # noqa: F403, F401
+except ImportError:
+    pass  # Якщо файл не знайдено, продовжуємо без патчу
+
 
 def main():
     """Run administrative tasks."""
