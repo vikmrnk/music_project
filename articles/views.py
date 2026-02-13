@@ -154,5 +154,15 @@ def handler404(request, exception):
 
 
 def handler500(request):
-    """Кастомна сторінка 500"""
-    return render(request, 'articles/500.html', status=500)
+    """Кастомна сторінка 500 - простий HTML без залежностей"""
+    try:
+        from django.template import loader
+        from django.http import HttpResponseServerError
+        # Використовуємо простий шаблон без extends та context_processors
+        template = loader.get_template('articles/500.html')
+        return HttpResponseServerError(template.render({}, request))
+    except Exception:
+        # Якщо навіть рендеринг помилки не працює, повертаємо простий HTML
+        from django.http import HttpResponseServerError
+        html = """<!DOCTYPE html><html><head><meta charset="utf-8"><title>500</title></head><body><h1>500</h1><p>Помилка сервера</p><a href="/">На головну</a></body></html>"""
+        return HttpResponseServerError(html, content_type='text/html; charset=utf-8')
