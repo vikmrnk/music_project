@@ -1,0 +1,46 @@
+<footer class="site-footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-section">
+                <a href="{% url 'articles:home' %}" class="site-logo" style="margin-bottom:16px;display:inline-flex">
+                    <div class="site-logo__icon">S</div>
+                    <span class="site-logo__text" style="color:#fff">
+                        Синтез<span style="color:#a78bfa">.Music</span>
+                    </span>
+                </a>
+                <p class="footer__brand-description">
+                    Ваше джерело музичних новин, інтервʼю та рецензій. 
+                    Все про музику в одному місці.
+                </p>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Категорії</h4>
+                <ul>
+                    {% for category in categories|slice:":6" %}
+                    <li><a href="{{ category.get_absolute_url }}">{{ category.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Соціальні мережі</h4>
+                <div class="social-links">
+                    <a href="#" aria-label="Facebook">Facebook</a>
+                    <a href="#" aria-label="Twitter">Twitter</a>
+                    <a href="#" aria-label="Instagram">Instagram</a>
+                    <a href="#" aria-label="Telegram">Telegram</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <span>&copy; {% now "Y" %} Синтез.Music. Всі права захищені.</span>
+            <div class="footer-bottom__links">
+                <a href="#">Політика конфіденційності</a>
+                <a href="#">Умови використання</a>
+            </div>
+        </div>
+    </div>
+</footer>
+

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}500 - Помилка сервера - Music Media{% endblock %}
+
+{% block content %}
+<section class="error-page">
+    <div class="container">
+        <h1>500</h1>
+        <p>Помилка сервера</p>
+        <a href="{% url 'articles:home' %}" class="btn">Повернутися на головну</a>
+    </div>
+</section>
+{% endblock %}
+

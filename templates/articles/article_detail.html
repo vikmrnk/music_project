@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ article.meta_title|default:article.title }} - Music Media{% endblock %}
+
+{% block meta %}
+<meta name="description" content="{{ article.meta_description|default:article.short_description }}">
+<meta name="keywords" content="{% for tag in article.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+{% endblock %}
+
+{% block opengraph %}
+{{ block.super }}
+<meta property="og:title" content="{{ article.title }}">
+<meta property="og:description" content="{{ article.short_description }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+{% if article.featured_image %}
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ article.featured_image.url }}">
+{% endif %}
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs">
+    <div class="container">
+        <a href="{% url 'articles:home' %}">Головна</a>
+        {% if article.category %}
+        <span>&rsaquo;</span>
+        <a href="{{ article.category.get_absolute_url }}">{{ article.category.name }}</a>
+        {% endif %}
+        <span>&rsaquo;</span>
+        <span>{{ article.title|truncatewords:5 }}</span>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<article class="article-detail">
+    <div class="container">
+        <header class="article-header">
+            {% if article.category %}
+            {% with category_slug=article.category.slug %}
+            <span class="category-badge {% if category_slug == 'news' or category_slug == 'novyny' %}category-badge--news{% elif category_slug == 'interviews' or category_slug == 'interviu' %}category-badge--interview{% elif category_slug == 'reviews' or category_slug == 'retsenzii' %}category-badge--review{% elif category_slug == 'analytics' or category_slug == 'analityka' %}category-badge--analytics{% elif category_slug == 'playlists' or category_slug == 'dobirky' %}category-badge--compilations{% elif category_slug == 'columns' or category_slug == 'avtorski-kolonky' %}category-badge--columns{% endif %}" style="margin-bottom:16px">{{ article.category.name }}</span>
+            {% endwith %}
+            {% endif %}
+            
+            <h1 class="article-page__title">{{ article.title }}</h1>
+            
+            <div class="article-page__meta">
+                <div class="article-page__author">
+                    <div class="article-page__author-avatar">{{ article.author.get_full_name|default:article.author.username|first|upper }}</div>
+                    <div>
+                        <a href="{% url 'articles:author_detail' article.author.username %}" class="article-page__author-name">{{ article.author.get_full_name|default:article.author.username }}</a>
+                        <p class="article-page__date">{{ article.published_at|date:"d.m.Y H:i" }}</p>
+                    </div>
+                </div>
+                
+                <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#a3a3a3">
+                    <span>{{ article.reading_time }} хв читання</span>
+                    <span>{{ article.views_count }} переглядів</span>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-button" aria-label="Поділитися" onclick="shareArticle()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/>
+                            <circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/>
+                            <path d="m15.41 6.51-6.82 3.98"/>
+                        </svg>
+                    </button>
+                    <button class="action-button" aria-label="Зберегти" onclick="saveArticle()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            {% if article.featured_image %}
+            <div class="article-featured-image">
+                <img src="{{ article.featured_image.url }}" alt="{{ article.title }}" loading="eager">
+            </div>
+            {% endif %}
+            
+            {% if article.video_url %}
+            <div class="article-featured-video">
+                <iframe src="{{ article.get_video_embed_url }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            {% elif article.featured_video %}
+            <div class="article-featured-video">
+                <video controls>
+                    <source src="{{ article.featured_video.url }}" type="video/mp4">
+                    Ваш браузер не підтримує відео.
+                </video>
+            </div>
+            {% endif %}
+        </header>
+        
+        <div class="article-content">
+            {{ article.content|linebreaks }}
+        </div>
+        
+        {% if article.tags.all %}
+        <div class="article-tags">
+            {% for tag in article.tags.all %}
+            <a href="{{ tag.get_absolute_url }}" class="article-tag">#{{ tag.name }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="article-share">
+            <strong>Поділитися:</strong>
+            <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank" rel="noopener">Facebook</a>
+            <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text={{ article.title }}" target="_blank" rel="noopener">Twitter</a>
+            <a href="https://t.me/share/url?url={{ request.build_absolute_uri }}&text={{ article.title }}" target="_blank" rel="noopener">Telegram</a>
+        </div>
+    </div>
+</article>
+
+{% if related_articles %}
+<section class="related-articles">
+    <div class="container">
+        <h2>Схожі статті</h2>
+        <div class="articles-grid">
+            {% for article in related_articles %}
+            {% include 'articles/includes/article_card.html' with article=article %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+

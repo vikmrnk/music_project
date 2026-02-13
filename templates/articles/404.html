@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}404 - Сторінку не знайдено - Music Media{% endblock %}
+
+{% block content %}
+<section class="error-page">
+    <div class="container">
+        <h1>404</h1>
+        <p>Сторінку не знайдено</p>
+        <a href="{% url 'articles:home' %}" class="btn">Повернутися на головну</a>
+    </div>
+</section>
+{% endblock %}
+

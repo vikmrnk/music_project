@@ -1,0 +1,19 @@
+<nav class="main-nav">
+    <div class="container">
+        <ul class="nav-list" id="navList">
+            <li><a href="{% url 'articles:home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">Головна</a></li>
+            <li><a href="{% url 'articles:article_list' %}" class="{% if request.resolver_match.url_name == 'article_list' %}active{% endif %}">Всі статті</a></li>
+            
+            {% for category in categories %}
+            <li><a href="{{ category.get_absolute_url }}" class="{% if request.resolver_match.url_name == 'category_detail' and request.resolver_match.kwargs.slug == category.slug %}active{% endif %}">{{ category.name }}</a></li>
+            {% endfor %}
+        </ul>
+        
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Меню" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</nav>
+

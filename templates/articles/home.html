@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Головна - Music Media{% endblock %}
+
+{% block content %}
+<!-- Hero Section - Featured Article -->
+{% if featured_article %}
+<section class="hero-section">
+    <div class="container">
+        <article class="featured-article">
+            {% if featured_article.featured_image %}
+            <div class="featured-image">
+                <img src="{{ featured_article.featured_image.url }}" alt="{{ featured_article.title }}" loading="eager">
+            </div>
+            {% endif %}
+            <div class="featured-content">
+                {% if featured_article.category %}
+                <span class="hero__badge">{{ featured_article.category.name }}</span>
+                {% endif %}
+                <h2><a href="{{ featured_article.get_absolute_url }}">{{ featured_article.title }}</a></h2>
+                <p class="short-description">{{ featured_article.short_description }}</p>
+                <div class="article-meta">
+                    <span class="author">
+                        <div class="hero__author-avatar">{{ featured_article.author.get_full_name|default:featured_article.author.username|first|upper }}</div>
+                        {{ featured_article.author.get_full_name|default:featured_article.author.username }}
+                    </span>
+                    <span class="date">{{ featured_article.published_at|date:"d.m.Y" }}</span>
+                    <span class="reading-time">{{ featured_article.reading_time }} хв</span>
+                </div>
+            </div>
+        </article>
+    </div>
+</section>
+{% endif %}
+
+<!-- Latest News -->
+<section class="content-section">
+    <div class="container">
+        <h2 class="section-title">Останні новини</h2>
+        <div class="articles-grid">
+            {% for article in latest_news %}
+            {% include 'articles/includes/article_card.html' with article=article %}
+            {% empty %}
+            <p>Новини відсутні</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Interviews -->
+{% if interviews %}
+<section class="content-section">
+    <div class="container">
+        <h2 class="section-title">Інтервʼю</h2>
+        <div class="articles-grid">
+            {% for article in interviews %}
+            {% include 'articles/includes/article_card.html' with article=article %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Reviews -->
+{% if reviews %}
+<section class="content-section">
+    <div class="container">
+        <h2 class="section-title">Рецензії</h2>
+        <div class="articles-grid">
+            {% for article in reviews %}
+            {% include 'articles/includes/article_card.html' with article=article %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Popular Articles -->
+{% if popular_articles %}
+<section class="content-section">
+    <div class="container">
+        <h2 class="section-title">Популярне</h2>
+        <div class="articles-grid">
+            {% for article in popular_articles %}
+            {% include 'articles/includes/article_card.html' with article=article %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Newsletter Subscription -->
+<section class="newsletter-section">
+    <div class="container">
+        <h2>Підпишіться на розсилку</h2>
+        <p>Отримуйте найкращі статті прямо на пошту</p>
+        <form class="newsletter-form" method="post" action="#">
+            {% csrf_token %}
+            <input type="email" name="email" placeholder="Ваш email" required>
+            <button type="submit">Підписатися</button>
+        </form>
+    </div>
+</section>
+{% endblock %}
+

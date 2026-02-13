@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    {% block meta %}
+    <meta name="description" content="Музичний медіа-сайт з новинами, інтервʼю, рецензіями та аналітикою">
+    <meta name="keywords" content="музика, новини, інтервʼю, рецензії">
+    {% endblock %}
+    
+    {% block opengraph %}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Синтез.Music">
+    {% endblock %}
+    
+    <title>{% block title %}Синтез.Music{% endblock %}</title>
+    
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    
+    {% load static %}
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% include 'includes/header.html' %}
+    {% include 'includes/navbar.html' %}
+    
+    <main class="main-content">
+        {% block breadcrumbs %}{% endblock %}
+        {% block content %}{% endblock %}
+    </main>
+    
+    {% include 'includes/footer.html' %}
+    
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

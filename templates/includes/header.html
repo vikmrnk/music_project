@@ -1,0 +1,30 @@
+<header class="site-header">
+    <div class="container">
+        <div class="header-content">
+            <a href="{% url 'articles:home' %}" class="site-logo">
+                <div class="site-logo__icon">S</div>
+                <span class="site-logo__text">Синтез<span>.Music</span></span>
+            </a>
+            
+            <div class="header-actions">
+                <form class="search-form" action="{% url 'articles:search' %}" method="get">
+                    <div class="search-box">
+                        <svg class="search-box__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.3-4.3"/>
+                        </svg>
+                        <input type="search" name="q" placeholder="Пошук..." class="search-input" id="liveSearchInput">
+                    </div>
+                    <div class="live-search-results" id="liveSearchResults"></div>
+                </form>
+                
+                <button class="theme-toggle" id="themeToggle" aria-label="Перемкнути тему">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ category.name }} - Music Media{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs">
+    <div class="container">
+        <a href="{% url 'articles:home' %}">Головна</a>
+        <span>&rsaquo;</span>
+        <span>{{ category.name }}</span>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="category-page">
+    <div class="container">
+        <header class="category-header">
+            <div class="category-header__icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                    <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                </svg>
+            </div>
+            <div>
+                <h1>{{ category.name }}</h1>
+                {% if category.description %}
+                <p class="category-description">{{ category.description }}</p>
+                {% endif %}
+            </div>
+        </header>
+        
+        <div class="articles-grid">
+            {% for article in page_obj %}
+            {% include 'articles/includes/article_card.html' with article=article %}
+            {% empty %}
+            <div class="empty-state">
+                <div class="empty-state__icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                        <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                    </svg>
+                </div>
+                <h3 class="empty-state__title">Статті в цій категорії відсутні</h3>
+                <p class="empty-state__text">Поки що тут немає публікацій. Слідкуйте за оновленнями!</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="pagination-link">← Попередня</a>
+            {% endif %}
+            
+            <span class="pagination-info">Сторінка {{ page_obj.number }} з {{ page_obj.paginator.num_pages }}</span>
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="pagination-link">Наступна →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+

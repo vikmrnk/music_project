@@ -1,0 +1,41 @@
+<article class="article-card">
+    <div class="article-image">
+        {% if article.featured_image %}
+        <a href="{{ article.get_absolute_url }}">
+            <img src="{{ article.featured_image.url }}" alt="{{ article.title }}" loading="lazy">
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="article-content">
+        {% if article.category %}
+        {% with category_slug=article.category.slug %}
+        <span class="category-badge {% if category_slug == 'news' or category_slug == 'novyny' %}category-badge--news{% elif category_slug == 'interviews' or category_slug == 'interviu' %}category-badge--interview{% elif category_slug == 'reviews' or category_slug == 'retsenzii' %}category-badge--review{% elif category_slug == 'analytics' or category_slug == 'analityka' %}category-badge--analytics{% elif category_slug == 'playlists' or category_slug == 'dobirky' %}category-badge--compilations{% elif category_slug == 'columns' or category_slug == 'avtorski-kolonky' %}category-badge--columns{% endif %}">{{ article.category.name }}</span>
+        {% endwith %}
+        {% endif %}
+        
+        <h3><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></h3>
+        <p class="short-description">{{ article.short_description|truncatewords:20 }}</p>
+        
+        <div class="article-card__meta">
+            <span class="author">
+                <div class="article-card__author-avatar">{{ article.author.get_full_name|default:article.author.username|first|upper }}</div>
+                {{ article.author.get_full_name|default:article.author.username }}
+            </span>
+            <span class="date">{{ article.published_at|date:"d.m.Y" }}</span>
+            <span class="reading-time">{{ article.reading_time }} хв</span>
+            {% if article.views_count %}
+            <span class="views">{{ article.views_count }} переглядів</span>
+            {% endif %}
+        </div>
+        
+        {% if article.tags.all %}
+        <div class="article-tags">
+            {% for tag in article.tags.all|slice:":3" %}
+            <a href="{{ tag.get_absolute_url }}" class="tag">{{ tag.name }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</article>
+
