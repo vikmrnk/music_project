@@ -159,21 +159,34 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 os.makedirs(STATIC_ROOT, exist_ok=True)
 
 # Cloudinary налаштування для медіа-файлів
+import logging
+logger = logging.getLogger(__name__)
+
 CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')
+logger.info(f"CLOUDINARY_URL present: {bool(CLOUDINARY_URL)}")
+
 if CLOUDINARY_URL:
     # Використовуємо Cloudinary для зберігання медіа
+    # Важливо: cloudinary_storage має бути перед django.contrib.staticfiles в INSTALLED_APPS
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     # Для ImageField також потрібно вказати storage
     DEFAULT_IMAGE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     MEDIA_URL = '/media/'
     # MEDIA_ROOT не потрібен при використанні Cloudinary
     
+    # Перевіряємо, чи правильно імпортується storage
+    try:
+        from cloudinary_storage.storage import MediaCloudinaryStorage
+        logger.info("✓ MediaCloudinaryStorage imported successfully")
+        print("✓ MediaCloudinaryStorage imported successfully")
+    except ImportError as e:
+        logger.error(f"✗ Failed to import MediaCloudinaryStorage: {e}")
+        print(f"✗ Failed to import MediaCloudinaryStorage: {e}")
+    
     # Налаштування Cloudinary через CLOUDINARY_URL
     # django-cloudinary-storage автоматично використовує CLOUDINARY_URL
     # Додатково налаштовуємо cloudinary для прямого використання
     import cloudinary
-    import logging
-    logger = logging.getLogger(__name__)
     try:
         # Парсимо CLOUDINARY_URL: cloudinary://api_key:api_secret@cloud_name
         url_parts = CLOUDINARY_URL.replace('cloudinary://', '').split('@')
@@ -190,20 +203,25 @@ if CLOUDINARY_URL:
                     api_secret=api_secret,
                     secure=True
                 )
-                logger.info(f"Cloudinary configured: cloud_name={cloud_name}")
+                logger.info(f"✓ Cloudinary configured: cloud_name={cloud_name}, api_key={api_key[:5]}...")
+                print(f"✓ Cloudinary configured: cloud_name={cloud_name}")
             else:
-                logger.warning("Could not parse CLOUDINARY_URL: invalid auth format")
+                logger.error("✗ Could not parse CLOUDINARY_URL: invalid auth format")
+                print("✗ Could not parse CLOUDINARY_URL: invalid auth format")
         else:
-            logger.warning("Could not parse CLOUDINARY_URL: invalid format")
+            logger.error(f"✗ Could not parse CLOUDINARY_URL: invalid format. URL parts: {len(url_parts)}")
+            print(f"✗ Could not parse CLOUDINARY_URL: invalid format")
     except Exception as e:
-        logger.warning(f"Could not configure Cloudinary: {e}")
+        logger.error(f"✗ Could not configure Cloudinary: {e}")
+        print(f"✗ Could not configure Cloudinary: {e}")
+        import traceback
+        traceback.print_exc()
 else:
     # Локальне зберігання для розробки
     MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.info("Using local media storage (CLOUDINARY_URL not set)")
+    logger.warning("⚠ Using local media storage (CLOUDINARY_URL not set)")
+    print("⚠ Using local media storage (CLOUDINARY_URL not set)")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
