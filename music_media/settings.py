@@ -150,3 +150,7 @@ SESSION_COOKIE_AGE = 86400  # 1 day
 # щоб уникнути помилок з відсутніми файлами в manifest (наприклад, favicon.ico)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
+# WhiteNoise configuration
+WHITENOISE_USE_FINDERS = True  # Дозволяє WhiteNoise знаходити файли в STATICFILES_DIRS
+WHITENOISE_AUTOREFRESH = True  # Автоматично оновлює файли в режимі розробки
+
