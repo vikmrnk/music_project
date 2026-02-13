@@ -163,12 +163,47 @@ CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')
 if CLOUDINARY_URL:
     # Використовуємо Cloudinary для зберігання медіа
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    # Для ImageField також потрібно вказати storage
+    DEFAULT_IMAGE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     MEDIA_URL = '/media/'
     # MEDIA_ROOT не потрібен при використанні Cloudinary
+    
+    # Налаштування Cloudinary через CLOUDINARY_URL
+    # django-cloudinary-storage автоматично використовує CLOUDINARY_URL
+    # Додатково налаштовуємо cloudinary для прямого використання
+    import cloudinary
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        # Парсимо CLOUDINARY_URL: cloudinary://api_key:api_secret@cloud_name
+        url_parts = CLOUDINARY_URL.replace('cloudinary://', '').split('@')
+        if len(url_parts) == 2:
+            auth_parts = url_parts[0].split(':')
+            if len(auth_parts) == 2:
+                api_key = auth_parts[0]
+                api_secret = auth_parts[1]
+                cloud_name = url_parts[1]
+                
+                cloudinary.config(
+                    cloud_name=cloud_name,
+                    api_key=api_key,
+                    api_secret=api_secret,
+                    secure=True
+                )
+                logger.info(f"Cloudinary configured: cloud_name={cloud_name}")
+            else:
+                logger.warning("Could not parse CLOUDINARY_URL: invalid auth format")
+        else:
+            logger.warning("Could not parse CLOUDINARY_URL: invalid format")
+    except Exception as e:
+        logger.warning(f"Could not configure Cloudinary: {e}")
 else:
     # Локальне зберігання для розробки
     MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("Using local media storage (CLOUDINARY_URL not set)")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
