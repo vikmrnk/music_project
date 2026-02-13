@@ -10,55 +10,76 @@ import sys
 
 # Застосовуємо патчі тільки для Python 3.14+
 if sys.version_info >= (3, 14):
-    from django.template.context import RequestContext, BaseContext, RenderContext
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        from django.template.context import RequestContext, BaseContext, RenderContext
+        logger.info("Python 3.14 fix: Successfully imported Django context classes")
+    except ImportError as e:
+        logger.error(f"Python 3.14 fix: Failed to import Django context classes: {e}")
+        raise
 
     def _fixed_requestcontext_copy(self):
         """
         Виправлена версія __copy__ для RequestContext, яка працює з Python 3.14.
-        Копіюємо всі атрибути, включаючи render_context з BaseContext.
+        Копіюємо всі атрибути через __dict__, щоб не пропустити жоден.
         """
         # Створюємо новий порожній екземпляр без виклику __init__
         duplicate = object.__new__(self.__class__)
         
-        # Ініціалізуємо render_context (це робиться в BaseContext.__init__)
-        duplicate.render_context = RenderContext()
+        # Копіюємо всі атрибути з оригінального об'єкта
+        # Використовуємо __dict__ для отримання всіх атрибутів
+        for key, value in self.__dict__.items():
+            if key == 'render_context':
+                # render_context потребує нового екземпляра
+                duplicate.render_context = RenderContext()
+                # Копіюємо стан, якщо він існує
+                if hasattr(value, '_state'):
+                    duplicate.render_context._state = value._state.copy()
+            elif key == 'dicts':
+                # dicts потрібно скопіювати як список
+                duplicate.dicts = value[:]
+            else:
+                # Всі інші атрибути копіюємо напряму
+                setattr(duplicate, key, value)
         
-        # Копіюємо dicts напряму (це найважливіший атрибут)
-        duplicate.dicts = self.dicts[:]
-        
-        # Копіюємо request (обов'язковий атрибут для RequestContext)
-        duplicate.request = self.request
-        
-        # Копіюємо current_app, якщо він існує (опціональний атрибут)
-        if hasattr(self, 'current_app'):
-            duplicate.current_app = self.current_app
-        
-        # Копіюємо render_context стан, якщо він існує та має _state
-        if hasattr(self, 'render_context') and hasattr(self.render_context, '_state'):
-            duplicate.render_context._state = self.render_context._state.copy()
+        # Переконаємося, що render_context існує (на випадок, якщо його не було в __dict__)
+        if not hasattr(duplicate, 'render_context'):
+            duplicate.render_context = RenderContext()
         
         return duplicate
 
     def _fixed_basecontext_copy(self):
         """
         Виправлена версія __copy__ для BaseContext, яка працює з Python 3.14.
+        Копіюємо всі атрибути через __dict__, щоб не пропустити жоден.
         """
         # Створюємо новий порожній екземпляр без виклику __init__
         duplicate = object.__new__(self.__class__)
         
-        # Ініціалізуємо render_context (це робиться в BaseContext.__init__)
-        duplicate.render_context = RenderContext()
+        # Копіюємо всі атрибути з оригінального об'єкта
+        for key, value in self.__dict__.items():
+            if key == 'render_context':
+                # render_context потребує нового екземпляра
+                duplicate.render_context = RenderContext()
+                # Копіюємо стан, якщо він існує
+                if hasattr(value, '_state'):
+                    duplicate.render_context._state = value._state.copy()
+            elif key == 'dicts':
+                # dicts потрібно скопіювати як список
+                duplicate.dicts = value[:]
+            else:
+                # Всі інші атрибути копіюємо напряму
+                setattr(duplicate, key, value)
         
-        # Копіюємо dicts напряму, без використання super()
-        duplicate.dicts = self.dicts[:]
-        
-        # Копіюємо render_context стан, якщо він існує
-        if hasattr(self, 'render_context') and hasattr(self.render_context, '_state'):
-            duplicate.render_context._state = self.render_context._state.copy()
+        # Переконаємося, що render_context існує (на випадок, якщо його не було в __dict__)
+        if not hasattr(duplicate, 'render_context'):
+            duplicate.render_context = RenderContext()
         
         return duplicate
 
     # Застосовуємо патчі
     RequestContext.__copy__ = _fixed_requestcontext_copy
     BaseContext.__copy__ = _fixed_basecontext_copy
+    logger.info("Python 3.14 fix: Successfully applied patches to RequestContext and BaseContext")
 
