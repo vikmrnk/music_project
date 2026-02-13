@@ -118,6 +118,10 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Переконайтеся, що staticfiles існує
+import os
+os.makedirs(STATIC_ROOT, exist_ok=True)
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -146,11 +150,12 @@ CACHES = {
 SESSION_COOKIE_AGE = 86400  # 1 day
 
 # WhiteNoise settings for static files
-# Використовуємо CompressedStaticFilesStorage замість CompressedManifestStaticFilesStorage
-# щоб уникнути помилок з відсутніми файлами в manifest (наприклад, favicon.ico)
+# Використовуємо CompressedStaticFilesStorage для стиснення та кешування
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # WhiteNoise configuration
 WHITENOISE_USE_FINDERS = True  # Дозволяє WhiteNoise знаходити файли в STATICFILES_DIRS
-WHITENOISE_AUTOREFRESH = True  # Автоматично оновлює файли в режимі розробки
+WHITENOISE_AUTOREFRESH = False  # В production не потрібно
+WHITENOISE_ROOT = STATIC_ROOT  # Вказуємо корінь для статичних файлів
+WHITENOISE_MANIFEST_STRICT = False  # Не вимагає всіх файлів в manifest
 
