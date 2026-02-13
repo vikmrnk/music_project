@@ -61,7 +61,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'articles.context_processors.categories',
+                # Вимикаємо categories для адмінки, щоб уникнути проблем з Python 3.14
+                # Категорії додаються вручну в views
+                # 'articles.context_processors.categories',
             ],
         },
     },

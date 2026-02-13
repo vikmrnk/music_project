@@ -7,6 +7,14 @@ from services.article_service import ArticleService
 from articles.models import Article, Category, Tag
 
 
+def get_categories_for_context():
+    """Отримати категорії для контексту (замість context_processors)"""
+    try:
+        return Category.objects.filter(is_active=True).order_by('order', 'name')
+    except Exception:
+        return []
+
+
 def home(request):
     """Головна сторінка з різними блоками контенту"""
     featured_articles = ArticleService.get_featured_articles(limit=1)
@@ -39,6 +47,7 @@ def article_list(request):
     
     context = {
         'page_obj': page_obj,
+        'categories': get_categories_for_context(),
     }
     return render(request, 'articles/article_list.html', context)
 
@@ -59,6 +68,7 @@ def article_detail(request, slug):
     context = {
         'article': article,
         'related_articles': related_articles,
+        'categories': get_categories_for_context(),
     }
     return render(request, 'articles/article_detail.html', context)
 
@@ -74,6 +84,7 @@ def category_detail(request, slug):
     context = {
         'category': category,
         'page_obj': page_obj,
+        'categories': get_categories_for_context(),
     }
     return render(request, 'articles/category_detail.html', context)
 
@@ -89,6 +100,7 @@ def tag_detail(request, slug):
     context = {
         'tag': tag,
         'page_obj': page_obj,
+        'categories': get_categories_for_context(),
     }
     return render(request, 'articles/tag_detail.html', context)
 
@@ -104,6 +116,7 @@ def author_detail(request, username):
     context = {
         'author': author,
         'page_obj': page_obj,
+        'categories': get_categories_for_context(),
     }
     return render(request, 'articles/author_detail.html', context)
 
@@ -121,6 +134,7 @@ def search(request):
     context = {
         'query': query,
         'page_obj': page_obj,
+        'categories': get_categories_for_context(),
     }
     return render(request, 'articles/search.html', context)
 
