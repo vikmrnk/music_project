@@ -11,7 +11,7 @@
         <article class="featured-article">
             {% if featured_article.featured_image %}
             <div class="featured-image">
-                <img src="{{ featured_article.featured_image.url }}" alt="{{ featured_article.title }}" loading="eager">
+                <img src="{{ featured_article.get_featured_image_url|default:featured_article.featured_image.url }}" alt="{{ featured_article.title }}" loading="eager">
             </div>
             {% endif %}
             <div class="featured-content">

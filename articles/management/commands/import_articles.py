@@ -514,7 +514,16 @@ class Command(BaseCommand):
                 if append_mode:
                     existing = Article.objects.filter(slug=article_data.get('slug', '')).first()
                     if existing:
-                        self.stdout.write(f'  ⊘ Пропущено (вже існує): {article_data["title"]}')
+                        # Якщо стаття існує, але не має фото, додаємо його
+                        if not existing.featured_image and article_data.get('featured_image_url'):
+                            image_file = self.download_image(article_data['featured_image_url'], existing.title)
+                            if image_file:
+                                existing.featured_image.save(image_file.name, image_file, save=True)
+                                self.stdout.write(f'  ✓ Додано фото до існуючої статті: {existing.title}')
+                            else:
+                                self.stdout.write(f'  ⚠ Не вдалося завантажити фото для: {existing.title}')
+                        else:
+                            self.stdout.write(f'  ⊘ Пропущено (вже існує): {article_data["title"]}')
                         continue
                 
                 # Створити статтю

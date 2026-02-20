@@ -2,7 +2,7 @@
     <div class="article-image">
         {% if article.featured_image %}
         <a href="{{ article.get_absolute_url }}">
-            <img src="{{ article.featured_image.url }}" alt="{{ article.title }}" loading="lazy">
+            <img src="{{ article.get_featured_image_url|default:article.featured_image.url }}" alt="{{ article.title }}" loading="lazy">
         </a>
         {% endif %}
     </div>

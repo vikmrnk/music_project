@@ -202,6 +202,40 @@ class Article(models.Model):
         self.views_count += 1
         self.save(update_fields=['views_count'])
     
+    def get_featured_image_url(self):
+        """Повертає правильний URL для зображення з Cloudinary"""
+        if not self.featured_image:
+            return None
+        
+        image_url = self.featured_image.url
+        
+        # Якщо це Cloudinary URL, переконуємося, що він правильний
+        if 'res.cloudinary.com' in image_url:
+            # Cloudinary для зображень повертає URL у форматі:
+            # https://res.cloudinary.com/cloud_name/image/upload/v1234567890/path/to/image.jpg
+            # Перевіряємо, чи URL містить /image/upload/
+            if '/image/upload/' in image_url:
+                # URL вже правильний для зображення
+                return image_url
+            elif '/video/upload/' in image_url:
+                # Якщо зображення було завантажено як video (помилка), виправляємо на image
+                image_url = image_url.replace('/video/upload/', '/image/upload/')
+                return image_url
+            else:
+                # Якщо URL не містить /image/upload/, генеруємо правильний URL
+                try:
+                    import cloudinary
+                    # Отримуємо public_id з URL або з поля
+                    public_id = self.featured_image.name
+                    # Генеруємо правильний URL для зображення
+                    image_url = cloudinary.utils.cloudinary_url(public_id, resource_type='image')[0]
+                    return image_url
+                except Exception:
+                    # Якщо не вдалося, повертаємо оригінальний URL
+                    return image_url
+        
+        return image_url
+    
     def get_video_file_url(self):
         """Повертає правильний URL для відео файлу з Cloudinary"""
         if not self.featured_video:
