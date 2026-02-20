@@ -41,6 +41,7 @@ class VideoCloudinaryStorage(MediaCloudinaryStorage):
             # Імпортуємо cloudinary тільки коли потрібно
             import cloudinary
             import cloudinary.uploader
+            from urllib.parse import urlparse
             
             # Перевіряємо, чи Cloudinary налаштовано
             cloudinary_url = os.environ.get('CLOUDINARY_URL', '')
@@ -49,11 +50,29 @@ class VideoCloudinaryStorage(MediaCloudinaryStorage):
                 raise ValueError("CLOUDINARY_URL must be set in environment variables")
             
             # Налаштовуємо Cloudinary з CLOUDINARY_URL
+            # Парсимо URL: cloudinary://api_key:api_secret@cloud_name
             try:
-                cloudinary.config().from_url(cloudinary_url)
-                logger.info("✓ Cloudinary налаштовано з CLOUDINARY_URL")
+                # Видаляємо префікс cloudinary://
+                url_str = cloudinary_url.replace('cloudinary://', '')
+                # Розділяємо на auth та host
+                if '@' in url_str:
+                    auth_part, cloud_name = url_str.split('@', 1)
+                    if ':' in auth_part:
+                        api_key, api_secret = auth_part.split(':', 1)
+                        # Налаштовуємо Cloudinary з параметрами
+                        cloudinary.config(
+                            cloud_name=cloud_name,
+                            api_key=api_key,
+                            api_secret=api_secret
+                        )
+                        logger.info(f"✓ Cloudinary налаштовано: cloud_name={cloud_name}")
+                    else:
+                        raise ValueError("Invalid CLOUDINARY_URL format: missing api_secret")
+                else:
+                    raise ValueError("Invalid CLOUDINARY_URL format: missing @")
             except Exception as e:
                 logger.error(f"✗ Помилка налаштування Cloudinary: {e}")
+                logger.error(f"CLOUDINARY_URL: {cloudinary_url[:30]}...")
                 raise
             
             # Використовуємо Cloudinary API напряму для завантаження відео

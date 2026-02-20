@@ -270,6 +270,30 @@ except Exception as e:
     traceback.print_exc()
     raise
 
+# Глобальне налаштування Cloudinary для використання в коді
+# Це забезпечує, що cloudinary.config() працює правильно
+try:
+    import cloudinary
+    from urllib.parse import urlparse
+    
+    # Парсимо CLOUDINARY_URL
+    url_str = CLOUDINARY_URL.replace('cloudinary://', '')
+    if '@' in url_str:
+        auth_part, cloud_name = url_str.split('@', 1)
+        if ':' in auth_part:
+            api_key, api_secret = auth_part.split(':', 1)
+            # Налаштовуємо Cloudinary глобально
+            cloudinary.config(
+                cloud_name=cloud_name,
+                api_key=api_key,
+                api_secret=api_secret
+            )
+            logger.info("✓ Cloudinary налаштовано глобально")
+            print("✓ Cloudinary налаштовано глобально")
+except Exception as e:
+    logger.warning(f"Не вдалося налаштувати Cloudinary глобально: {e}")
+    print(f"⚠ Не вдалося налаштувати Cloudinary глобально: {e}")
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
