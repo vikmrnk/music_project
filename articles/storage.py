@@ -3,6 +3,10 @@
 """
 from cloudinary_storage.storage import MediaCloudinaryStorage
 import mimetypes
+import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class VideoCloudinaryStorage(MediaCloudinaryStorage):
@@ -35,7 +39,22 @@ class VideoCloudinaryStorage(MediaCloudinaryStorage):
         # Якщо це відео, використовуємо Cloudinary API напряму з resource_type='video'
         if is_video:
             # Імпортуємо cloudinary тільки коли потрібно
+            import cloudinary
             import cloudinary.uploader
+            
+            # Перевіряємо, чи Cloudinary налаштовано
+            cloudinary_url = os.environ.get('CLOUDINARY_URL', '')
+            if not cloudinary_url:
+                logger.error("✗ CLOUDINARY_URL не знайдено в os.environ!")
+                raise ValueError("CLOUDINARY_URL must be set in environment variables")
+            
+            # Налаштовуємо Cloudinary з CLOUDINARY_URL
+            try:
+                cloudinary.config().from_url(cloudinary_url)
+                logger.info("✓ Cloudinary налаштовано з CLOUDINARY_URL")
+            except Exception as e:
+                logger.error(f"✗ Помилка налаштування Cloudinary: {e}")
+                raise
             
             # Використовуємо Cloudinary API напряму для завантаження відео
             options = {
@@ -47,10 +66,14 @@ class VideoCloudinaryStorage(MediaCloudinaryStorage):
                 # Якщо це файловий об'єкт, читаємо його
                 content.seek(0)  # Повертаємося на початок файлу
                 file_data = content.read()
+                logger.info(f"Завантаження відео на Cloudinary: {name}, розмір: {len(file_data)} байт")
                 response = cloudinary.uploader.upload(file_data, **options)
+                logger.info(f"✓ Відео завантажено на Cloudinary: {response.get('public_id', 'unknown')}")
             else:
                 # Якщо це вже дані, використовуємо напряму
+                logger.info(f"Завантаження відео на Cloudinary: {name}")
                 response = cloudinary.uploader.upload(content, **options)
+                logger.info(f"✓ Відео завантажено на Cloudinary: {response.get('public_id', 'unknown')}")
             
             # Повертаємо public_id як ім'я файлу
             # Cloudinary повертає public_id у форматі: folder/public_id або просто public_id

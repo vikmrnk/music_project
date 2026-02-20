@@ -166,14 +166,46 @@ logger = logging.getLogger(__name__)
 
 # Читаємо CLOUDINARY_URL з .env файлу або змінних середовища
 # django-cloudinary-storage читає CLOUDINARY_URL з os.environ
-CLOUDINARY_URL = config('CLOUDINARY_URL', default='')
+# На Render змінні середовища встановлюються через панель керування
+# python-decouple спочатку шукає в os.environ, потім в .env файлі
+
+# Спочатку перевіряємо os.environ напряму (для Render)
+CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')
+
+# Якщо не знайдено в os.environ, пробуємо через config (для локальної розробки)
+if not CLOUDINARY_URL:
+    try:
+        CLOUDINARY_URL = config('CLOUDINARY_URL', default='')
+    except Exception as e:
+        logger.warning(f"Не вдалося прочитати CLOUDINARY_URL через config: {e}")
+        CLOUDINARY_URL = ''
+
+# Очищаємо від пробілів та перевіряємо
+CLOUDINARY_URL = CLOUDINARY_URL.strip() if CLOUDINARY_URL else ''
+
+# Діагностика
+logger.info(f"CLOUDINARY_URL знайдено: {'Так' if CLOUDINARY_URL else 'Ні'}")
+if CLOUDINARY_URL:
+    # Показуємо тільки перші символи для безпеки
+    masked_url = CLOUDINARY_URL[:20] + '...' if len(CLOUDINARY_URL) > 20 else CLOUDINARY_URL
+    logger.info(f"CLOUDINARY_URL (масковано): {masked_url}")
+    print(f"✓ CLOUDINARY_URL знайдено: {masked_url}")
+else:
+    logger.error("✗ CLOUDINARY_URL не знайдено!")
+    print("✗ CLOUDINARY_URL не знайдено!")
+    print("Перевірте, чи встановлено змінну середовища CLOUDINARY_URL на Render")
 
 # Встановлюємо в os.environ для django-cloudinary-storage
 if CLOUDINARY_URL:
     os.environ['CLOUDINARY_URL'] = CLOUDINARY_URL
+    logger.info("✓ CLOUDINARY_URL встановлено в os.environ")
+    print("✓ CLOUDINARY_URL встановлено в os.environ")
 else:
     logger.error("✗ CLOUDINARY_URL не встановлено! Встановіть змінну середовища CLOUDINARY_URL")
     print("✗ CLOUDINARY_URL не встановлено! Встановіть змінну середовища CLOUDINARY_URL")
+    print("На Render: Settings → Environment → Environment Variables → Add Environment Variable")
+    print("KEY: CLOUDINARY_URL")
+    print("VALUE: cloudinary://API_KEY:API_SECRET@CLOUD_NAME")
     raise ValueError("CLOUDINARY_URL must be set. Please set the CLOUDINARY_URL environment variable.")
 
 # Використовуємо Cloudinary для зберігання медіа ВСЮДИ (локально і на Render)
