@@ -2,6 +2,19 @@
 # Start script that runs migrations and imports data before starting the server
 set -o errexit
 
+# Діагностика CLOUDINARY_URL
+echo "=========================================="
+echo "Перевірка CLOUDINARY_URL:"
+if [ -z "$CLOUDINARY_URL" ]; then
+    echo "✗ CLOUDINARY_URL не встановлено!"
+    echo "Встановіть змінну середовища CLOUDINARY_URL на Render"
+else
+    echo "✓ CLOUDINARY_URL встановлено"
+    # Показуємо тільки перші символи для безпеки
+    echo "CLOUDINARY_URL: ${CLOUDINARY_URL:0:30}..."
+fi
+echo "=========================================="
+
 # Run migrations
 python manage.py migrate --noinput
 

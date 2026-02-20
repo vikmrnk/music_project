@@ -6,6 +6,8 @@ from django.utils import timezone
 import math
 import os
 from decouple import config
+from cloudinary_storage.storage import MediaCloudinaryStorage
+from articles.storage import VideoCloudinaryStorage
 
 # Визначаємо, чи використовувати Cloudinary
 # Читаємо CLOUDINARY_URL з .env файлу або змінних середовища
@@ -87,10 +89,14 @@ class AuthorProfile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author_profile', verbose_name="Користувач")
     bio = models.TextField(blank=True, verbose_name="Біографія")
-    # Використовуємо ImageField з DEFAULT_FILE_STORAGE
-    # На Render з CLOUDINARY_URL django-cloudinary-storage автоматично зберігає на Cloudinary
-    # Локально використовується локальне зберігання
-    avatar = models.ImageField(upload_to='authors/', blank=True, null=True, verbose_name="Аватар")
+    # Явно вказуємо Cloudinary storage для ImageField
+    avatar = models.ImageField(
+        upload_to='authors/', 
+        blank=True, 
+        null=True, 
+        storage=MediaCloudinaryStorage(),
+        verbose_name="Аватар"
+    )
     social_links = models.JSONField(default=dict, blank=True, verbose_name="Соціальні мережі")
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='author', verbose_name="Роль")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -125,13 +131,23 @@ class Article(models.Model):
     tags = models.ManyToManyField(Tag, blank=True, related_name='articles', verbose_name="Теги")
     
     # Медіа
-    # Використовуємо ImageField/FileField з DEFAULT_FILE_STORAGE
-    # На Render з CLOUDINARY_URL django-cloudinary-storage автоматично зберігає на Cloudinary
-    # Локально використовується локальне зберігання
-    featured_image = models.ImageField(upload_to='articles/', blank=True, null=True, verbose_name="Головне зображення")
-    # Для відео використовуємо стандартний storage
+    # Явно вказуємо storage для ImageField та FileField
+    # Використовуємо Cloudinary storage для всіх медіа-файлів
+    featured_image = models.ImageField(
+        upload_to='articles/', 
+        blank=True, 
+        null=True, 
+        storage=MediaCloudinaryStorage(),
+        verbose_name="Головне зображення"
+    )
     # VideoCloudinaryStorage автоматично визначає відео за шляхом 'articles/videos/' і встановлює resource_type='video'
-    featured_video = models.FileField(upload_to='articles/videos/', blank=True, null=True, verbose_name="Відео (файл)")
+    featured_video = models.FileField(
+        upload_to='articles/videos/', 
+        blank=True, 
+        null=True, 
+        storage=VideoCloudinaryStorage(),
+        verbose_name="Відео (файл)"
+    )
     
     # Метадані
     meta_title = models.CharField(max_length=200, blank=True, verbose_name="Meta заголовок")
