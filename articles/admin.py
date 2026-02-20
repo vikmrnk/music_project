@@ -84,8 +84,8 @@ class ArticleAdmin(admin.ModelAdmin):
             'fields': ('short_description', 'content', 'featured_image')
         }),
         ('Відео', {
-            'fields': ('video_url', 'featured_video'),
-            'description': 'Можна додати відео через URL (YouTube/Vimeo) або завантажити файл. Якщо вказано обидва, пріоритет має URL.',
+            'fields': ('featured_video',),
+            'description': 'Завантажте відео файл. Відео буде збережено на Cloudinary.',
             'classes': ('collapse',)
         }),
         ('SEO', {

@@ -5,6 +5,7 @@ Django settings for music_media project.
 from pathlib import Path
 import os
 import dj_database_url
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,10 +15,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production-!@#$%^&*()')
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production-!@#$%^&*()')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False") == "True"
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = ["*"]  # Тимчасово для Render, потім можна поставити домен
 
@@ -106,7 +107,7 @@ WSGI_APPLICATION = 'music_media.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL', f'sqlite:///{BASE_DIR / "db.sqlite3"}')
+        default=config('DATABASE_URL', default=f'sqlite:///{BASE_DIR / "db.sqlite3"}')
     )
 }
 
@@ -159,69 +160,83 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 os.makedirs(STATIC_ROOT, exist_ok=True)
 
 # Cloudinary налаштування для медіа-файлів
+# ВСЕГДА використовуємо Cloudinary для зберігання медіа-файлів
 import logging
 logger = logging.getLogger(__name__)
 
-CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL', '')
-logger.info(f"CLOUDINARY_URL present: {bool(CLOUDINARY_URL)}")
+# Читаємо CLOUDINARY_URL з .env файлу або змінних середовища
+# django-cloudinary-storage читає CLOUDINARY_URL з os.environ
+CLOUDINARY_URL = config('CLOUDINARY_URL', default='')
 
+# Встановлюємо в os.environ для django-cloudinary-storage
 if CLOUDINARY_URL:
-    # Використовуємо Cloudinary для зберігання медіа
-    # Важливо: cloudinary_storage має бути перед django.contrib.staticfiles в INSTALLED_APPS
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    # Для ImageField також потрібно вказати storage
-    DEFAULT_IMAGE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    MEDIA_URL = '/media/'
-    # MEDIA_ROOT не потрібен при використанні Cloudinary
-    
-    # Перевіряємо, чи правильно імпортується storage
-    try:
-        from cloudinary_storage.storage import MediaCloudinaryStorage
-        logger.info("✓ MediaCloudinaryStorage imported successfully")
-        print("✓ MediaCloudinaryStorage imported successfully")
-    except ImportError as e:
-        logger.error(f"✗ Failed to import MediaCloudinaryStorage: {e}")
-        print(f"✗ Failed to import MediaCloudinaryStorage: {e}")
-    
-    # Налаштування Cloudinary через CLOUDINARY_URL
-    # django-cloudinary-storage автоматично використовує CLOUDINARY_URL
-    # Додатково налаштовуємо cloudinary для прямого використання
-    import cloudinary
-    try:
-        # Парсимо CLOUDINARY_URL: cloudinary://api_key:api_secret@cloud_name
-        url_parts = CLOUDINARY_URL.replace('cloudinary://', '').split('@')
-        if len(url_parts) == 2:
-            auth_parts = url_parts[0].split(':')
-            if len(auth_parts) == 2:
-                api_key = auth_parts[0]
-                api_secret = auth_parts[1]
-                cloud_name = url_parts[1]
-                
-                cloudinary.config(
-                    cloud_name=cloud_name,
-                    api_key=api_key,
-                    api_secret=api_secret,
-                    secure=True
-                )
-                logger.info(f"✓ Cloudinary configured: cloud_name={cloud_name}, api_key={api_key[:5]}...")
-                print(f"✓ Cloudinary configured: cloud_name={cloud_name}")
-            else:
-                logger.error("✗ Could not parse CLOUDINARY_URL: invalid auth format")
-                print("✗ Could not parse CLOUDINARY_URL: invalid auth format")
-        else:
-            logger.error(f"✗ Could not parse CLOUDINARY_URL: invalid format. URL parts: {len(url_parts)}")
-            print(f"✗ Could not parse CLOUDINARY_URL: invalid format")
-    except Exception as e:
-        logger.error(f"✗ Could not configure Cloudinary: {e}")
-        print(f"✗ Could not configure Cloudinary: {e}")
-        import traceback
-        traceback.print_exc()
+    os.environ['CLOUDINARY_URL'] = CLOUDINARY_URL
 else:
-    # Локальне зберігання для розробки
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = BASE_DIR / 'media'
-    logger.warning("⚠ Using local media storage (CLOUDINARY_URL not set)")
-    print("⚠ Using local media storage (CLOUDINARY_URL not set)")
+    logger.error("✗ CLOUDINARY_URL не встановлено! Встановіть змінну середовища CLOUDINARY_URL")
+    print("✗ CLOUDINARY_URL не встановлено! Встановіть змінну середовища CLOUDINARY_URL")
+    raise ValueError("CLOUDINARY_URL must be set. Please set the CLOUDINARY_URL environment variable.")
+
+# Використовуємо Cloudinary для зберігання медіа ВСЮДИ (локально і на Render)
+# Важливо: cloudinary_storage має бути перед django.contrib.staticfiles в INSTALLED_APPS
+# Використовуємо стандартний storage для всіх файлів
+# VideoCloudinaryStorage перевизначає url() для правильного формату URL для відео
+DEFAULT_FILE_STORAGE = 'articles.storage.VideoCloudinaryStorage'
+# Для ImageField використовуємо стандартний storage
+DEFAULT_IMAGE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+MEDIA_URL = '/media/'
+# MEDIA_ROOT не потрібен при використанні Cloudinary
+
+# Налаштування папок для Cloudinary
+# django-cloudinary-storage автоматично використовує CLOUDINARY_URL з os.environ
+# Не потрібно встановлювати CLOUD_NAME, API_KEY, API_SECRET окремо
+CLOUDINARY_STORAGE = {
+    'PREFIX': 'media/',  # Префікс для всіх файлів
+}
+
+# Перевіряємо, чи правильно імпортується storage
+try:
+    from cloudinary_storage.storage import MediaCloudinaryStorage
+    logger.info("✓ MediaCloudinaryStorage imported successfully")
+    print("✓ MediaCloudinaryStorage imported successfully")
+except ImportError as e:
+    logger.error(f"✗ Failed to import MediaCloudinaryStorage: {e}")
+    print(f"✗ Failed to import MediaCloudinaryStorage: {e}")
+    raise
+
+# Налаштування Cloudinary через CLOUDINARY_URL
+# django-cloudinary-storage автоматично використовує CLOUDINARY_URL з os.environ
+# Перевіряємо, чи правильно встановлено CLOUDINARY_URL
+try:
+    # Перевіряємо формат URL
+    if not CLOUDINARY_URL.startswith('cloudinary://'):
+        raise ValueError("CLOUDINARY_URL must start with 'cloudinary://'")
+    
+    # Парсимо для перевірки та логування
+    url_parts = CLOUDINARY_URL.replace('cloudinary://', '').split('@')
+    if len(url_parts) == 2:
+        auth_parts = url_parts[0].split(':')
+        if len(auth_parts) == 2:
+            api_key = auth_parts[0]
+            cloud_name = url_parts[1]
+            
+            logger.info(f"✓ Cloudinary URL format is correct: cloud_name={cloud_name}, api_key={api_key[:5]}...")
+            print(f"✓ Cloudinary URL format is correct: cloud_name={cloud_name}")
+            print(f"✓ All media files will be stored on Cloudinary (both locally and on Render)")
+            print(f"✓ django-cloudinary-storage will use CLOUDINARY_URL from environment")
+        else:
+            logger.error("✗ Could not parse CLOUDINARY_URL: invalid auth format")
+            print("✗ Could not parse CLOUDINARY_URL: invalid auth format")
+            raise ValueError("Invalid CLOUDINARY_URL format: auth parts")
+    else:
+        logger.error(f"✗ Could not parse CLOUDINARY_URL: invalid format. URL parts: {len(url_parts)}")
+        print(f"✗ Could not parse CLOUDINARY_URL: invalid format")
+        raise ValueError("Invalid CLOUDINARY_URL format: URL parts")
+except Exception as e:
+    logger.error(f"✗ Could not validate CLOUDINARY_URL: {e}")
+    print(f"✗ Could not validate CLOUDINARY_URL: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

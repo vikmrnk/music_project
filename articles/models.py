@@ -5,20 +5,13 @@ from django.urls import reverse
 from django.utils import timezone
 import math
 import os
-
-# Імпортуємо CloudinaryField, якщо Cloudinary налаштовано
-try:
-    from cloudinary.models import CloudinaryField
-    CLOUDINARY_AVAILABLE = True
-except ImportError:
-    CLOUDINARY_AVAILABLE = False
-    # Створюємо заглушку для CloudinaryField
-    class CloudinaryField:
-        pass
+from decouple import config
 
 # Визначаємо, чи використовувати Cloudinary
-# На Render CLOUDINARY_URL буде встановлено, тому використовуємо CloudinaryField
-USE_CLOUDINARY = CLOUDINARY_AVAILABLE and bool(os.environ.get('CLOUDINARY_URL', ''))
+# Читаємо CLOUDINARY_URL з .env файлу або змінних середовища
+# Використовуємо django-cloudinary-storage через DEFAULT_FILE_STORAGE
+# Тому не потрібен CloudinaryField - використовуємо звичайний ImageField
+USE_CLOUDINARY = bool(config('CLOUDINARY_URL', default=''))
 
 try:
     from unidecode import unidecode
@@ -94,13 +87,10 @@ class AuthorProfile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author_profile', verbose_name="Користувач")
     bio = models.TextField(blank=True, verbose_name="Біографія")
-    # Використовуємо CloudinaryField для зберігання на Cloudinary
-    # На Render з CLOUDINARY_URL використовується CloudinaryField
-    # Локально використовується ImageField
-    if USE_CLOUDINARY and CLOUDINARY_AVAILABLE and CloudinaryField and not isinstance(CloudinaryField, type):
-        avatar = CloudinaryField('image', folder='authors/', blank=True, null=True, verbose_name="Аватар")
-    else:
-        avatar = models.ImageField(upload_to='authors/', blank=True, null=True, verbose_name="Аватар")
+    # Використовуємо ImageField з DEFAULT_FILE_STORAGE
+    # На Render з CLOUDINARY_URL django-cloudinary-storage автоматично зберігає на Cloudinary
+    # Локально використовується локальне зберігання
+    avatar = models.ImageField(upload_to='authors/', blank=True, null=True, verbose_name="Аватар")
     social_links = models.JSONField(default=dict, blank=True, verbose_name="Соціальні мережі")
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='author', verbose_name="Роль")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -135,16 +125,13 @@ class Article(models.Model):
     tags = models.ManyToManyField(Tag, blank=True, related_name='articles', verbose_name="Теги")
     
     # Медіа
-    # Використовуємо CloudinaryField для зберігання на Cloudinary
-    # На Render з CLOUDINARY_URL використовується CloudinaryField
-    # Локально використовується ImageField/FileField
-    if USE_CLOUDINARY and CLOUDINARY_AVAILABLE and CloudinaryField and not isinstance(CloudinaryField, type):
-        featured_image = CloudinaryField('image', folder='articles/', blank=True, null=True, verbose_name="Головне зображення")
-        featured_video = CloudinaryField('video', folder='articles/videos/', blank=True, null=True, resource_type='video', verbose_name="Відео (файл)")
-    else:
-        featured_image = models.ImageField(upload_to='articles/', blank=True, null=True, verbose_name="Головне зображення")
-        featured_video = models.FileField(upload_to='articles/videos/', blank=True, null=True, verbose_name="Відео (файл)")
-    video_url = models.URLField(blank=True, max_length=500, verbose_name="Відео URL (YouTube/Vimeo)")
+    # Використовуємо ImageField/FileField з DEFAULT_FILE_STORAGE
+    # На Render з CLOUDINARY_URL django-cloudinary-storage автоматично зберігає на Cloudinary
+    # Локально використовується локальне зберігання
+    featured_image = models.ImageField(upload_to='articles/', blank=True, null=True, verbose_name="Головне зображення")
+    # Для відео використовуємо стандартний storage
+    # VideoCloudinaryStorage автоматично визначає відео за шляхом 'articles/videos/' і встановлює resource_type='video'
+    featured_video = models.FileField(upload_to='articles/videos/', blank=True, null=True, verbose_name="Відео (файл)")
     
     # Метадані
     meta_title = models.CharField(max_length=200, blank=True, verbose_name="Meta заголовок")
@@ -199,32 +186,44 @@ class Article(models.Model):
         self.views_count += 1
         self.save(update_fields=['views_count'])
     
-    def get_video_embed_url(self):
-        """Конвертує YouTube/Vimeo URL в embed формат"""
-        if not self.video_url:
+    def get_video_file_url(self):
+        """Повертає правильний URL для відео файлу з Cloudinary"""
+        if not self.featured_video:
             return None
         
-        url = self.video_url.strip()
+        video_url = self.featured_video.url
         
-        # YouTube
-        if 'youtube.com/watch' in url:
-            video_id = url.split('v=')[1].split('&')[0]
-            return f'https://www.youtube.com/embed/{video_id}'
-        elif 'youtu.be/' in url:
-            video_id = url.split('youtu.be/')[1].split('?')[0]
-            return f'https://www.youtube.com/embed/{video_id}'
-        elif 'youtube.com/embed/' in url:
-            return url  # Вже embed формат
+        # Якщо це Cloudinary URL для відео, переконуємося, що він правильний
+        if 'res.cloudinary.com' in video_url:
+            # Cloudinary для відео повертає URL у форматі:
+            # https://res.cloudinary.com/cloud_name/video/upload/v1234567890/path/to/video.mp4
+            # Або з public_id:
+            # https://res.cloudinary.com/cloud_name/video/upload/public_id
+            
+            # Перевіряємо, чи URL містить /video/upload/
+            if '/video/upload/' in video_url:
+                # URL вже правильний для відео
+                return video_url
+            elif '/image/upload/' in video_url:
+                # Якщо відео було завантажено як image (помилка), виправляємо на video
+                video_url = video_url.replace('/image/upload/', '/video/upload/')
+                return video_url
+            else:
+                # Якщо URL не містить /video/upload/, генеруємо правильний URL
+                # Використовуємо Cloudinary API для генерації правильного URL
+                try:
+                    import cloudinary
+                    # Отримуємо public_id з URL або з поля
+                    public_id = self.featured_video.name
+                    # Генеруємо правильний URL для відео
+                    video_url = cloudinary.utils.cloudinary_url(public_id, resource_type='video')[0]
+                    return video_url
+                except Exception:
+                    # Якщо не вдалося, повертаємо оригінальний URL
+                    return video_url
         
-        # Vimeo
-        elif 'vimeo.com/' in url:
-            video_id = url.split('vimeo.com/')[1].split('?')[0]
-            return f'https://player.vimeo.com/video/{video_id}'
-        elif 'player.vimeo.com/video/' in url:
-            return url  # Вже embed формат
-        
-        # Якщо не вдалося розпізнати, повертаємо оригінальний URL
-        return url
+        return video_url
+    
 
 
 class NewsletterSubscriber(models.Model):
