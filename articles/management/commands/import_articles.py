@@ -3,10 +3,14 @@
 python manage.py import_articles
 """
 import json
+import random
+import requests
+from io import BytesIO
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.text import slugify
+from django.core.files.base import ContentFile
 from articles.models import Article, Category, Tag
 from datetime import datetime
 
@@ -38,6 +42,50 @@ class Command(BaseCommand):
             action='store_true',
             help='Додати статті без видалення існуючих',
         )
+    
+    def download_image(self, url, article_title):
+        """
+        Завантажує зображення з URL та повертає ImageFile для збереження
+        Підтримує посилання з будь-якого ресурсу (Unsplash, Pexels, прямі посилання тощо)
+        """
+        try:
+            # Завантажуємо зображення з User-Agent для кращої сумісності
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            response = requests.get(url, timeout=10, stream=True, headers=headers)
+            response.raise_for_status()
+            
+            # Перевіряємо content-type
+            content_type = response.headers.get('content-type', '')
+            if not content_type.startswith('image/'):
+                self.stdout.write(self.style.WARNING(f'  ⚠ URL не є зображенням для "{article_title}": {url}'))
+                return None
+            
+            # Читаємо дані
+            image_data = response.content
+            
+            # Визначаємо розширення з URL або content-type
+            ext = 'jpg'  # за замовчуванням
+            if 'png' in content_type:
+                ext = 'png'
+            elif 'gif' in content_type:
+                ext = 'gif'
+            elif 'webp' in content_type:
+                ext = 'webp'
+            elif url.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+                ext = url.lower().split('.')[-1]
+            
+            filename = f'{slugify(article_title[:50])}.{ext}'
+            image_file = ContentFile(image_data, name=filename)
+            
+            return image_file
+        except requests.exceptions.RequestException as e:
+            self.stdout.write(self.style.WARNING(f'  ⚠ Не вдалося завантажити зображення для "{article_title}": {e}'))
+            return None
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'  ⚠ Помилка обробки зображення для "{article_title}": {e}'))
+            return None
 
     def handle(self, *args, **options):
         append_mode = options['append']
@@ -51,6 +99,37 @@ class Command(BaseCommand):
             self.stdout.write('Режим додавання: існуючі статті залишаються...')
         
         # JSON дані
+        # Список посилань на зображення для випадкового розподілу
+        image_urls = [
+            "https://i.pinimg.com/736x/cc/88/3d/cc883d3b2c8714d3d9efb984d6ca830c.jpg",
+            "https://i.pinimg.com/736x/2f/6a/f8/2f6af8f6caec39faa7c022cfccdc2477.jpg",
+            "https://i.pinimg.com/736x/64/0c/5b/640c5bc65f3957a211127047ccd3a862.jpg",
+            "https://i.pinimg.com/736x/b6/73/43/b67343e6d8af2faef0a4df87bb49391e.jpg",
+            "https://i.pinimg.com/736x/e0/bf/59/e0bf595e0cc31f2db822221d64176830.jpg",
+            "https://i.pinimg.com/736x/3b/83/d7/3b83d715d79e457adda32e6011f6ad6b.jpg",
+            "https://i.pinimg.com/736x/e4/6d/67/e46d6760f24d25a5d92a8984a7a33157.jpg",
+            "https://i.pinimg.com/736x/d2/b2/38/d2b238d4e741a76757a4acb52c93425f.jpg",
+            "https://i.pinimg.com/1200x/e3/28/65/e328656ef75ba1f95d38ec86934d6b66.jpg",
+            "https://i.pinimg.com/736x/ac/72/13/ac72131ac0569536cff59d446a4fa51d.jpg",
+            "https://i.pinimg.com/1200x/6a/c2/49/6ac2491a63e03d18ede817004b86dc15.jpg",
+            "https://i.pinimg.com/736x/6b/b2/a0/6bb2a02591b474c134dd47b6334e6a69.jpg",
+            "https://i.pinimg.com/736x/e2/73/27/e27327f03c66b119503714bec30c2649.jpg",
+            "https://i.pinimg.com/736x/54/0f/12/540f12c7867d7d9e64fead0c9e3d06e6.jpg",
+            "https://i.pinimg.com/736x/8f/5a/ac/8f5aaccce435a46804938d53b2e27f76.jpg",
+            "https://i.pinimg.com/736x/f1/91/71/f19171131c225341d43586e6c33d6497.jpg",
+            "https://i.pinimg.com/736x/b9/76/3c/b9763c3f36a0ee6f9cafe174f1ab8b8d.jpg",
+            "https://i.pinimg.com/736x/c5/c3/33/c5c333397f2a85dd5ae04e026c2ecbb6.jpg",
+            "https://i.pinimg.com/736x/6b/00/f4/6b00f467c275166fd9f5a84810ae4453.jpg",
+            "https://i.pinimg.com/736x/1c/11/e9/1c11e9228d10d0ad2104f3190367e59e.jpg",
+            "https://i.pinimg.com/736x/7e/ce/de/7ecede541fba386464388119c38f0dcb.jpg",
+            "https://i.pinimg.com/736x/14/6e/c5/146ec5f1b5e9511dda8653033d35ebfe.jpg",
+            "https://i.pinimg.com/1200x/13/b0/d8/13b0d880c94ac051dce6672ed91c6ae2.jpg",
+            "https://i.pinimg.com/736x/ea/24/57/ea2457cf0bb1a33d49b5b1d932bd69ad.jpg",
+        ]
+        
+        # Перемішуємо посилання для випадкового розподілу
+        random.shuffle(image_urls)
+        
         articles_data = [
             {
                 "title": "ONUKA презентувала новий сингл із симфонічним оркестром",
@@ -64,7 +143,8 @@ class Command(BaseCommand):
                 "status": "published",
                 "published_at": "2026-02-10T12:00:00Z",
                 "meta_title": "ONUKA випустила новий сингл із симфонічним оркестром",
-                "meta_description": "ONUKA представила нову композицію, записану разом із симфонічним оркестром. Деталі премʼєри та плани на концерти."
+                "meta_description": "ONUKA представила нову композицію, записану разом із симфонічним оркестром. Деталі премʼєри та плани на концерти.",
+                "featured_image_url": image_urls[0] if len(image_urls) > 0 else None
             },
             {
                 "title": "Інтервʼю: Христина Соловій про новий альбом та музичну свободу",
@@ -76,7 +156,8 @@ class Command(BaseCommand):
                 "author_username": "journalist",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-09T14:00:00Z"
+                "published_at": "2026-02-09T14:00:00Z",
+                "featured_image_url": image_urls[1] if len(image_urls) > 1 else None
             },
             {
                 "title": "Рецензія: Новий альбом гурту «Late Night Echo» — зрілий крок уперед",
@@ -88,7 +169,8 @@ class Command(BaseCommand):
                 "author_username": "critic",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-08T16:00:00Z"
+                "published_at": "2026-02-08T16:00:00Z",
+                "featured_image_url": image_urls[2] if len(image_urls) > 2 else None
             },
             {
                 "title": "Як TikTok змінює музичну індустрію: аналітичний погляд",
@@ -100,7 +182,8 @@ class Command(BaseCommand):
                 "author_username": "editor",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-07T10:00:00Z"
+                "published_at": "2026-02-07T10:00:00Z",
+                "featured_image_url": image_urls[3] if len(image_urls) > 3 else None
             },
             {
                 "title": "5 українських джазових альбомів, які варто послухати цієї зими",
@@ -112,7 +195,8 @@ class Command(BaseCommand):
                 "author_username": "journalist",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-06T18:00:00Z"
+                "published_at": "2026-02-06T18:00:00Z",
+                "featured_image_url": image_urls[4] if len(image_urls) > 4 else None
             },
             {
                 "title": "Чому музика стала головною мовою покоління Z",
@@ -124,7 +208,8 @@ class Command(BaseCommand):
                 "author_username": "editor",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-05T20:00:00Z"
+                "published_at": "2026-02-05T20:00:00Z",
+                "featured_image_url": image_urls[5] if len(image_urls) > 5 else None
             },
             {
                 "title": "Інтервʼю: Марта Дорош про новий інді-альбом, сцену воєнного часу та внутрішню тишу",
@@ -138,7 +223,8 @@ class Command(BaseCommand):
                 "status": "published",
                 "published_at": "2026-02-12T14:00:00Z",
                 "meta_title": "Марта Дорош — інтервʼю про новий альбом та інді-сцену",
-                "meta_description": "Інді-рок виконавиця Марта Дорош розповідає про новий альбом, воєнний контекст і творчі пошуки."
+                "meta_description": "Інді-рок виконавиця Марта Дорош розповідає про новий альбом, воєнний контекст і творчі пошуки.",
+                "featured_image_url": image_urls[6] if len(image_urls) > 6 else None
             },
             {
                 "title": "Інтервʼю: Продюсер KOVALSKY про електронну сцену, алгоритми та незалежність",
@@ -150,7 +236,8 @@ class Command(BaseCommand):
                 "author_username": "editor",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-11T18:00:00Z"
+                "published_at": "2026-02-11T18:00:00Z",
+                "featured_image_url": image_urls[7] if len(image_urls) > 7 else None
             },
             {
                 "title": "Інтервʼю: Саксофоніст Андрій Левченко про сучасний український джаз",
@@ -162,7 +249,8 @@ class Command(BaseCommand):
                 "author_username": "journalist",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-10T20:00:00Z"
+                "published_at": "2026-02-10T20:00:00Z",
+                "featured_image_url": image_urls[8] if len(image_urls) > 8 else None
             },
             {
                 "title": "Гурт «Північний Вітер» анонсував перший великий тур Україною за останні три роки",
@@ -174,7 +262,8 @@ class Command(BaseCommand):
                 "author_username": "editor",
                 "is_featured": True,
                 "status": "published",
-                "published_at": "2026-02-13T10:00:00Z"
+                "published_at": "2026-02-13T10:00:00Z",
+                "featured_image_url": image_urls[9] if len(image_urls) > 9 else None
             },
             {
                 "title": "Електронний дует випустив спільний трек із французьким продюсером",
@@ -186,7 +275,8 @@ class Command(BaseCommand):
                 "author_username": "journalist",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-13T12:30:00Z"
+                "published_at": "2026-02-13T12:30:00Z",
+                "featured_image_url": image_urls[10] if len(image_urls) > 10 else None
             },
             {
                 "title": "Фестиваль «Open Sound» оголосив перших хедлайнерів літнього сезону",
@@ -198,7 +288,8 @@ class Command(BaseCommand):
                 "author_username": "editor",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-12T15:00:00Z"
+                "published_at": "2026-02-12T15:00:00Z",
+                "featured_image_url": image_urls[11] if len(image_urls) > 11 else None
             },
             {
                 "title": "Молода поп-виконавиця представила дебютний міні-альбом",
@@ -210,7 +301,8 @@ class Command(BaseCommand):
                 "author_username": "journalist",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-12T18:00:00Z"
+                "published_at": "2026-02-12T18:00:00Z",
+                "featured_image_url": image_urls[12] if len(image_urls) > 12 else None
             },
             {
                 "title": "Український саундтрек потрапив до міжнародного музичного чарту",
@@ -222,7 +314,8 @@ class Command(BaseCommand):
                 "author_username": "editor",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-11T09:00:00Z"
+                "published_at": "2026-02-11T09:00:00Z",
+                "featured_image_url": image_urls[13] if len(image_urls) > 13 else None
             },
             {
                 "title": "Рецензія: «Світло всередині» — найзріліший альбом гурту «Місто Хвиль»",
@@ -234,7 +327,8 @@ class Command(BaseCommand):
                 "author_username": "critic",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-13T18:00:00Z"
+                "published_at": "2026-02-13T18:00:00Z",
+                "featured_image_url": image_urls[14] if len(image_urls) > 14 else None
             },
             {
                 "title": "Рецензія: електронний реліз «Night Frequencies» — гіпнотична подорож у мінімалізм",
@@ -246,7 +340,8 @@ class Command(BaseCommand):
                 "author_username": "editor",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-12T20:00:00Z"
+                "published_at": "2026-02-12T20:00:00Z",
+                "featured_image_url": image_urls[15] if len(image_urls) > 15 else None
             },
             {
                 "title": "Рецензія: дебютний поп-альбом LINA — щирість без зайвого глянцю",
@@ -258,7 +353,8 @@ class Command(BaseCommand):
                 "author_username": "critic",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-11T16:00:00Z"
+                "published_at": "2026-02-11T16:00:00Z",
+                "featured_image_url": image_urls[16] if len(image_urls) > 16 else None
             },
             {
                 "title": "Рецензія: джазовий альбом «Urban Silence» — діалог саксофона і міста",
@@ -270,7 +366,8 @@ class Command(BaseCommand):
                 "author_username": "journalist",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-10T17:00:00Z"
+                "published_at": "2026-02-10T17:00:00Z",
+                "featured_image_url": image_urls[17] if len(image_urls) > 17 else None
             },
             {
                 "title": "Рецензія: експериментальний реліз «Fragments» — музика на межі жанрів",
@@ -282,7 +379,8 @@ class Command(BaseCommand):
                 "author_username": "editor",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-09T19:00:00Z"
+                "published_at": "2026-02-09T19:00:00Z",
+                "featured_image_url": image_urls[18] if len(image_urls) > 18 else None
             },
             {
                 "title": "Стрімінг проти радіо: як змінюється музичне споживання в Україні",
@@ -294,7 +392,8 @@ class Command(BaseCommand):
                 "author_username": "editor",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-14T12:00:00Z"
+                "published_at": "2026-02-14T12:00:00Z",
+                "featured_image_url": image_urls[19] if len(image_urls) > 19 else None
             },
             {
                 "title": "Музика під час війни: як змінюється роль артиста в суспільстві",
@@ -306,7 +405,8 @@ class Command(BaseCommand):
                 "author_username": "journalist",
                 "is_featured": True,
                 "status": "published",
-                "published_at": "2026-02-14T15:00:00Z"
+                "published_at": "2026-02-14T15:00:00Z",
+                "featured_image_url": image_urls[20] if len(image_urls) > 20 else None
             },
             {
                 "title": "7 українських рок-гуртів, які варто додати у свій плейлист",
@@ -318,7 +418,8 @@ class Command(BaseCommand):
                 "author_username": "critic",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-13T19:00:00Z"
+                "published_at": "2026-02-13T19:00:00Z",
+                "featured_image_url": image_urls[21] if len(image_urls) > 21 else None
             },
             {
                 "title": "5 електронних релізів для нічних поїздок",
@@ -330,7 +431,8 @@ class Command(BaseCommand):
                 "author_username": "editor",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-13T21:00:00Z"
+                "published_at": "2026-02-13T21:00:00Z",
+                "featured_image_url": image_urls[22] if len(image_urls) > 22 else None
             },
             {
                 "title": "6 джазових композицій для спокійного ранку",
@@ -342,7 +444,8 @@ class Command(BaseCommand):
                 "author_username": "journalist",
                 "is_featured": False,
                 "status": "published",
-                "published_at": "2026-02-12T09:00:00Z"
+                "published_at": "2026-02-12T09:00:00Z",
+                "featured_image_url": image_urls[23] if len(image_urls) > 23 else None
             }
         ]
         
@@ -428,6 +531,13 @@ class Command(BaseCommand):
                     meta_title=article_data.get('meta_title', ''),
                     meta_description=article_data.get('meta_description', ''),
                 )
+                
+                # Завантажити та зберегти зображення, якщо вказано URL
+                if article_data.get('featured_image_url'):
+                    image_file = self.download_image(article_data['featured_image_url'], article.title)
+                    if image_file:
+                        article.featured_image.save(image_file.name, image_file, save=True)
+                        self.stdout.write(f'  ✓ Зображення завантажено для: {article.title}')
                 
                 # Додати теги
                 if article_data.get('tags'):
